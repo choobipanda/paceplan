@@ -34,7 +34,8 @@ def generate_task_breakdown(
                     "You are a student planning assistant. "
                     "Break assignments into clear, realistic, ordered tasks. "
                     "The effort percentages across all tasks must total 100. "
-                    "Do not create study sessions yet."
+                    "Do not create study sessions yet. "
+                    "Only assign relative effort percentages; the application will calculate minutes."
                 ),
             },
             {

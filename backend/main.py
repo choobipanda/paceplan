@@ -5,6 +5,12 @@ from models import AssignmentCreate
 
 from services.ai_service import generate_task_breakdown
 
+from services.planning_service import (
+    allocate_task_minutes,
+    estimate_total_minutes,
+    split_into_sessions,
+)
+
 app = FastAPI(title="PacePlan API")
 
 
@@ -86,10 +92,32 @@ def generate_tasks(assignment_id: int):
             )
 
         supabase \
+            .table("study_sessions") \
+            .delete() \
+            .eq("assignment_id", assignment_id) \
+            .execute()
+
+        supabase \
             .table("tasks") \
             .delete() \
             .eq("assignment_id", assignment_id) \
             .execute()
+        
+
+        total_minutes = estimate_total_minutes(
+            assignment_type=assignment["assignment_type"],
+            difficulty=assignment["difficulty"],
+        )
+
+        supabase \
+                    .table("assignments") \
+                    .update(
+                        {
+                            "predicted_minutes": total_minutes,
+                        }
+                    ) \
+                    .eq("id", assignment_id) \
+                    .execute()
 
         breakdown = generate_task_breakdown(
             title=assignment["title"],
@@ -117,9 +145,53 @@ def generate_tasks(assignment_id: int):
             .execute()
         )
 
+        saved_tasks = task_response.data
+
+        session_rows = []
+        session_order = 1
+
+        for task in saved_tasks:
+            task_minutes = allocate_task_minutes(
+                total_minutes=total_minutes,
+                effort_percentage=float(task["effort_percentage"]),
+            )
+
+            task_sessions = split_into_sessions(
+                task_minutes=task_minutes,
+                session_length=assignment["preferred_session_length"],
+            )
+
+            for planned_minutes in task_sessions:
+                session_rows.append(
+                    {
+                        "task_id": task["id"],
+                        "assignment_id": assignment_id,
+                        "session_order": session_order,
+                        "planned_minutes": planned_minutes,
+                    }
+                )
+
+                session_order += 1
+
+        if session_rows:
+            session_response = (
+                supabase
+                .table("study_sessions")
+                .insert(session_rows)
+                .select("*")
+                .execute()
+            )
+        else:
+            session_response = None
+
         return {
             "assignment_id": assignment_id,
-            "tasks": task_response.data,
+            "predicted_minutes": total_minutes,
+            "tasks": saved_tasks,
+            "study_sessions": (
+                session_response.data
+                if session_response is not None else []
+            ),
         }
 
     except HTTPException:
