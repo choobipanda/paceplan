@@ -11,6 +11,14 @@ from services.planning_service import (
     split_into_sessions,
 )
 
+from datetime import date
+
+from services.scheduling_service import (
+    assign_session_times,
+    distribute_sessions_evenly,
+    get_scheduling_dates,
+)
+
 app = FastAPI(title="PacePlan API")
 
 
@@ -184,14 +192,47 @@ def generate_tasks(assignment_id: int):
         else:
             session_response = None
 
+        if session_response is None:
+            raise HTTPExeception(
+                status_code=500,
+                detail="No study sessions were generated."
+            )
+
+        study_sessions = session_response.data
+
+        scheduling_dates = get_scheduling_dates(
+            start_date=date.today(),
+            due_date=date.fromisoformat(assignment["due_date"]),
+        )
+
+        scheduled_sessions = distribute_sessions_evenly(
+            sessions=study_sessions,
+            scheduling_dates=scheduling_dates,
+        )
+
+        sessions_with_times = assign_session_times(
+            scheduled_sessions=scheduled_sessions,
+        )
+
+        for session in sessions_with_times:
+            (
+                supabase
+                .table("study_sessions")
+                .update(
+                    {
+                        "scheduled_start": session["scheduled_start"].isoformat(),
+                        "scheduled_end": session["scheduled_end"].isoformat(),
+                    }
+                )
+                .eq("id", session["id"])
+                .execute()
+            )
+
         return {
             "assignment_id": assignment_id,
             "predicted_minutes": total_minutes,
             "tasks": saved_tasks,
-            "study_sessions": (
-                session_response.data
-                if session_response is not None else []
-            ),
+            "study_sessions": sessions_with_times,
         }
 
     except HTTPException:
