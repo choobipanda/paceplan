@@ -1,7 +1,9 @@
+import traceback
+
 from fastapi import FastAPI, HTTPException
 
 from database import supabase
-from models import AssignmentCreate
+from models import AssignmentCreate, CompleteAssignmentRequest
 
 from services.ai_service import generate_task_breakdown
 
@@ -11,13 +13,16 @@ from services.planning_service import (
     split_into_sessions,
 )
 
-from datetime import date
+from datetime import date, datetime
 
 from services.scheduling_service import (
     assign_session_times,
     distribute_sessions_evenly,
     get_scheduling_dates,
 )
+
+from services.prediction_service import get_predicted_minutes
+
 
 app = FastAPI(title="PacePlan API")
 
@@ -111,10 +116,30 @@ def generate_tasks(assignment_id: int):
             .eq("assignment_id", assignment_id) \
             .execute()
         
+        completed_response = (
+            supabase
+            .table("assignments")
+            .select("*")
+            .not_.is_("actual_minutes", "null")
+            .execute()
+        )
 
-        total_minutes = estimate_total_minutes(
+        completed_assignments = completed_response.data
+
+        # total_minutes = estimate_total_minutes(
+        #     assignment_type=assignment["assignment_type"],
+        #     difficulty=assignment["difficulty"],
+        # )
+
+        fallback_minutes = estimate_total_minutes(
             assignment_type=assignment["assignment_type"],
             difficulty=assignment["difficulty"],
+        )
+
+        total_minutes, prediction_method = get_predicted_minutes(
+            completed_assignments=completed_assignments,
+            new_assignment=assignment,
+            fallback_minutes=fallback_minutes,
         )
 
         supabase \
@@ -193,7 +218,7 @@ def generate_tasks(assignment_id: int):
             session_response = None
 
         if session_response is None:
-            raise HTTPExeception(
+            raise HTTPException(
                 status_code=500,
                 detail="No study sessions were generated."
             )
@@ -202,7 +227,9 @@ def generate_tasks(assignment_id: int):
 
         scheduling_dates = get_scheduling_dates(
             start_date=date.today(),
-            due_date=date.fromisoformat(assignment["due_date"]),
+            due_date=datetime.fromisoformat(
+                assignment["due_date"].replace("Z", "+00:00")
+            ).date(),
         )
 
         scheduled_sessions = distribute_sessions_evenly(
@@ -231,6 +258,7 @@ def generate_tasks(assignment_id: int):
         return {
             "assignment_id": assignment_id,
             "predicted_minutes": total_minutes,
+            "prediction_method": prediction_method,
             "tasks": saved_tasks,
             "study_sessions": sessions_with_times,
         }
@@ -239,7 +267,42 @@ def generate_tasks(assignment_id: int):
         raise
 
     except Exception as error:
+        traceback.print_exc()
+
         raise HTTPException(
             status_code=500,
             detail=f"Could not generate tasks: {error}",
         ) from error
+
+@app.patch("/assignments/{assignment_id}/complete")
+def complete_assignment(
+    assignment_id: int,
+    request: CompleteAssignmentRequest
+):
+    if request.actual_minutes <= 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Actual minutes must be greater than zero."
+        )
+
+    response = (
+        supabase
+        .table("assignments")
+        .update({
+            "actual_minutes": request.actual_minutes,
+            "status": "completed"
+        })
+        .eq("id", assignment_id)
+        .execute()
+    )
+
+    if not response.data:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found"
+        )
+
+    return {
+        "message": "Assignment marked as complete.",
+        "assignment": response.data[0]
+    }

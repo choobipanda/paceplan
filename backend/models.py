@@ -10,3 +10,6 @@ class AssignmentCreate(BaseModel):
     difficulty: int = Field(ge=1, le=5)
     due_date: date
     preferred_session_length: int = Field(ge=15, le=180)
+
+class CompleteAssignmentRequest(BaseModel):
+    actual_minutes: int
