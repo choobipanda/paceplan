@@ -23,9 +23,20 @@ from services.scheduling_service import (
 
 from services.prediction_service import get_predicted_minutes
 
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="PacePlan API")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
@@ -73,7 +84,7 @@ def create_assignment(assignment: AssignmentCreate):
         # print("SUPABASE RESPONSE:", response)
 
         return {
-            "data": response.data
+            "data": response.data[0]
         }
 
     except Exception as error:
@@ -229,7 +240,7 @@ def generate_tasks(assignment_id: int):
             start_date=date.today(),
             due_date=datetime.fromisoformat(
                 assignment["due_date"].replace("Z", "+00:00")
-            ).date(),
+            ),
         )
 
         scheduled_sessions = distribute_sessions_evenly(

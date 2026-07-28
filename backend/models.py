@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 
 from pydantic import BaseModel, Field
 
@@ -8,7 +8,7 @@ class AssignmentCreate(BaseModel):
     prompt: str = Field(min_length=1)
     assignment_type: str = Field(min_length=1, max_length=100)
     difficulty: int = Field(ge=1, le=5)
-    due_date: date
+    due_date: datetime
     preferred_session_length: int = Field(ge=15, le=180)
 
 class CompleteAssignmentRequest(BaseModel):

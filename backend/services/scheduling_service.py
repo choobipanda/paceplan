@@ -3,20 +3,27 @@ from datetime import date, datetime, time, timedelta
 
 def get_scheduling_dates(
     start_date: date,
-    due_date: date,
+    due_date: datetime,
 ) -> list[date]:
-    if due_date < start_date:
-        raise ValueError("The due date cannot be in the past.")
+    if due_date.tzinfo is not None:
+        current_datetime = datetime.now(due_date.tzinfo)
+    else:
+        current_datetime = datetime.now()
+
+    if due_date <= current_datetime:
+        raise ValueError("The due date and time cannot be in the past.")
+
+    due_day = due_date.date()
 
     dates = []
     current_date = start_date
 
-    while current_date < due_date:
+    while current_date < due_day:
         dates.append(current_date)
         current_date += timedelta(days=1)
 
     if not dates:
-        dates.append(due_date)
+        dates.append(due_day)
 
     return dates
 
