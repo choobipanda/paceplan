@@ -134,7 +134,14 @@ def predict_assignment_minutes(
 
     prediction = model.predict(input_data)[0]
 
-    return max(1, round(prediction))
+    minimum_minutes = assignment["preferred_session_length"]
+
+    maximum_minutes = 8 * 60
+
+    return max(
+        minimum_minutes,
+        min(round(prediction), maximum_minutes)
+    )
 
 
 def get_predicted_minutes(

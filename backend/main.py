@@ -81,7 +81,6 @@ def create_assignment(assignment: AssignmentCreate):
             .select("*")
             .execute()
         )
-        # print("SUPABASE RESPONSE:", response)
 
         return {
             "data": response.data[0]
@@ -316,4 +315,39 @@ def complete_assignment(
     return {
         "message": "Assignment marked as complete.",
         "assignment": response.data[0]
+    }
+
+@app.get("/assignments/{assignment_id}/plan")
+def get_assignment_plan(assignment_id: int):
+    assignment = (
+        supabase
+        .table("assignments")
+        .select("*")
+        .eq("id", assignment_id)
+        .single()
+        .execute()
+    )
+
+    tasks = (
+        supabase
+        .table("tasks")
+        .select("*")
+        .eq("assignment_id", assignment_id)
+        .order("order_number")
+        .execute()
+    )
+
+    study_sessions = (
+        supabase
+        .table("study_sessions")
+        .select("*")
+        .eq("assignment_id", assignment_id)
+        .order("session_order")
+        .execute()
+    )
+
+    return {
+        "assignment": assignment.data,
+        "tasks": tasks.data,
+        "study_sessions": study_sessions.data,
     }

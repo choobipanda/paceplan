@@ -51,3 +51,19 @@ export async function generatePlan(assignmentId: number) {
 
   return response.json();
 }
+
+export async function getAssignmentPlan(assignmentId: number) {
+    const response = await fetch (
+        `${API_BASE_URL}/assignments/${assignmentId}/plan`
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+
+        throw new Error(
+            errorData.detail || "Failed to load assignment plan."
+        );
+    }
+
+    return response.json();
+}
