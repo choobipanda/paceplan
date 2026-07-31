@@ -421,9 +421,27 @@ export default function Home() {
                           key={session.id}
                           className="rounded-lg border border-zinc-200 p-4"
                         >
-                          <p className="font-semibold text-zinc-900">
-                            Session {session.session_order}
-                          </p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold uppercase tracking-wide text-zinc-700">
+                              Session {session.session_order}
+                            </p>
+
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                session.status === "planned"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : session.status === "in_progress"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              {session.status === "planned"
+                                ? "Planned"
+                                : session.status === "in_progress"
+                                ? "In Progress"
+                                : "Completed"}
+                            </span>
+                          </div>
 
                           <p className="mt-2 text-xl font-semibold text-zinc-900">
                             {session.planned_minutes} min
@@ -448,6 +466,30 @@ export default function Home() {
                               minute: "2-digit",
                             })}
                           </p>
+
+                          {session.status === "planned" && (
+                            <button
+                              onClick={() => handleStartSession(session.id)}
+                              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                            >
+                              Start Session
+                            </button>
+                          )}
+
+                          {session.status === "in_progress" && (
+                            <button
+                              onClick={() => handleCompleteSession(session.id)}
+                              className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                            >
+                              Complete Session
+                            </button>
+                          )}
+
+                          {session.status === "completed" && (
+                            <p className="mt-4 text-sm font-medium text-green-700">
+                              Session completed
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
