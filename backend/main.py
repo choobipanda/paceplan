@@ -13,7 +13,7 @@ from services.planning_service import (
     split_into_sessions,
 )
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from services.scheduling_service import (
     assign_session_times,
@@ -283,6 +283,36 @@ def generate_tasks(assignment_id: int):
             status_code=500,
             detail=f"Could not generate tasks: {error}",
         ) from error
+
+@app.patch("/study-sessions/{session_id}/start")
+def start_study_session(session_id: int):
+    current_time = datetime.now(timezone.utc)
+
+    response = (
+        supabase
+        .table("study_sessions")
+        .update(
+            {
+                "actual_start": current_time.isoformat(),
+                "actual_end": None,
+                "status": "in_progress",
+            }
+        )
+        .eq("id", session_id)
+        .eq("status", "planned")
+        .execute()
+    )
+
+    if not response.data:
+        raise HTTPException(
+            status_code=400,
+            detail="Session was not found or has already been started.",
+        )
+
+    return {
+        "message": "Study session started.",
+        "study_session": response.data[0],
+    }
 
 @app.patch("/assignments/{assignment_id}/complete")
 def complete_assignment(

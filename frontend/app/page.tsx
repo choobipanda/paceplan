@@ -59,6 +59,7 @@ export default function Home() {
   const [sessionLength, setSessionLength] = useState(45);
   const [generatingId, setGeneratingId] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<AssignmentPlan | null>(null);
+  const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -105,7 +106,9 @@ export default function Home() {
   async function handleViewPlan(assignmentId: number) {
     try {
       const plan = await getAssignmentPlan(assignmentId);
+
       setSelectedPlan(plan);
+      setSelectedAssignmentId(plan.assignment.id);
     } catch (error) {
       if (error instanceof Error) {
         alert(error.message);
@@ -133,7 +136,9 @@ export default function Home() {
 
       if (closestAssignment) {
         const plan = await getAssignmentPlan(closestAssignment.id);
+
         setSelectedPlan(plan);
+        setSelectedAssignmentId(plan.assignment.id);
       }
     }
 
@@ -245,8 +250,16 @@ export default function Home() {
                   {assignments.map((assignment) => (
                     <li
                       key={assignment.id}
-                      className="rounded-lg border border-zinc-200 bg-white p-4"
+                      className={`rounded-lg border p-4 transition-colors ${
+                        selectedAssignmentId === assignment.id
+                          ? "border-blue-400 bg-blue-50"
+                          : "border-zinc-200 bg-white"
+                      }`}
                     >
+                      <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                        Assignment #{assignment.id}
+                      </p>
+                      
                       <h3 className="font-semibold text-zinc-900">
                         {assignment.title}
                       </h3>
@@ -307,9 +320,13 @@ export default function Home() {
                 <h2 className="text-2xl font-bold text-zinc-900">
                   Study Plan
                 </h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  {selectedPlan.assignment.title} — Assignment ID:{" "}
-                  {selectedPlan.assignment.id}
+
+                <p className="mt-2 text-lg font-medium text-zinc-700">
+                  {selectedPlan.assignment.title}
+                </p>
+                
+                <p className="mt-1 text-sm text-zinc-400">
+                  ASSIGNMENT #{selectedPlan.assignment.id}
                 </p>
 
                 <div className="mt-6 rounded-xl bg-blue-50 p-5">
