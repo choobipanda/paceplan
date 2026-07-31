@@ -192,6 +192,19 @@ export default function Home() {
     loadAssignments();
   }, []);
 
+  const completedSessions =
+    selectedPlan?.study_sessions.filter(
+      (session) => session.status === "completed"
+    ).length ?? 0;
+
+  const totalSessions =
+    selectedPlan?.study_sessions.length ?? 0;
+
+  const progressPercentage =
+    totalSessions === 0
+      ? 0
+      : Math.round((completedSessions / totalSessions) * 100);
+
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-10">
       <div className="mx-auto max-w-5xl">
@@ -409,6 +422,29 @@ export default function Home() {
                         </li>
                       ))}
                     </ul>
+                  </div>
+
+                  <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-zinc-900">
+                        Progress
+                      </h3>
+
+                      <p className="text-sm font-medium text-zinc-600">
+                        {completedSessions} / {totalSessions}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 h-3 overflow-hidden rounded-full bg-zinc-200">
+                      <div
+                        className="h-full rounded-full bg-blue-600 transition-all duration-300"
+                        style={{ width: `${progressPercentage}%` }}
+                      />
+                    </div>
+
+                    <p className="mt-3 text-sm text-zinc-600">
+                      {progressPercentage}% Complete
+                    </p>
                   </div>
 
                   <div>
