@@ -136,7 +136,7 @@ def predict_assignment_minutes(
 
     minimum_minutes = assignment["preferred_session_length"]
 
-    maximum_minutes = 8 * 60
+    maximum_minutes = 60 * 60
 
     return max(
         minimum_minutes,
