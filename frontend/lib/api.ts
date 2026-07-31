@@ -67,3 +67,41 @@ export async function getAssignmentPlan(assignmentId: number) {
 
     return response.json();
 }
+
+export async function startStudySession(sessionId: number) {
+  const response = await fetch(
+    `${API_BASE_URL}/study-sessions/${sessionId}/start`,
+    {
+      method: "PATCH",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+
+    throw new Error(
+      errorData.detail || "Failed to start study session."
+    );
+  }
+
+  return response.json();
+}
+
+export async function completeStudySession(sessionId: number) {
+  const response = await fetch(
+    `${API_BASE_URL}/study-sessions/${sessionId}/complete`,
+    {
+      method: "PATCH",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+
+    throw new Error(
+      errorData.detail || "Failed to complete study session."
+    );
+  }
+
+  return response.json();
+}

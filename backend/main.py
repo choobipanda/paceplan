@@ -314,6 +314,51 @@ def start_study_session(session_id: int):
         "study_session": response.data[0],
     }
 
+@app.patch("/study-sessions/{session_id}/complete")
+def complete_study_session(session_id: int):
+    session_response = (
+        supabase
+        .table("study_sessions")
+        .select("*")
+        .eq("id", session_id)
+        .single()
+        .execute()
+    )
+
+    session = session_response.data
+
+    if not session:
+        raise HTTPException(
+            status_code=404,
+            detail="Study session not found.",
+        )
+
+    if session["status"] != "in_progress":
+        raise HTTPException(
+            status_code=400,
+            detail="Study session is not currently in progress.",
+        )
+
+    current_time = datetime.now(timezone.utc)
+
+    response = (
+        supabase
+        .table("study_sessions")
+        .update(
+            {
+                "actual_end": current_time.isoformat(),
+                "status": "completed",
+            }
+        )
+        .eq("id", session_id)
+        .execute()
+    )
+
+    return {
+        "message": "Study session completed.",
+        "study_session": response.data[0],
+    }
+
 @app.patch("/assignments/{assignment_id}/complete")
 def complete_assignment(
     assignment_id: int,

@@ -5,7 +5,10 @@ import {
   generatePlan,
   getAssignmentPlan,
   getAssignments, 
+  startStudySession,
+  completeStudySession,
 } from "@/lib/api";
+
 import { useEffect, useState } from "react";
 
 type Assignment = {
@@ -109,6 +112,50 @@ export default function Home() {
 
       setSelectedPlan(plan);
       setSelectedAssignmentId(plan.assignment.id);
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+        console.error(error);
+      }
+    }
+  }
+
+  async function handleStartSession(sessionId: number) {
+    try {
+      const response = await startStudySession(sessionId);
+
+      if (!selectedPlan) return;
+
+      setSelectedPlan({
+        ...selectedPlan,
+        study_sessions: selectedPlan.study_sessions.map((session) =>
+          session.id === sessionId
+            ? response.study_session
+            : session
+        ),
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+        console.error(error);
+      }
+    }
+  }
+
+  async function handleCompleteSession(sessionId: number) {
+    try {
+      const response = await completeStudySession(sessionId);
+
+      if (!selectedPlan) return;
+
+      setSelectedPlan({
+        ...selectedPlan,
+        study_sessions: selectedPlan.study_sessions.map((session) =>
+          session.id === sessionId
+            ? response.study_session
+            : session
+        ),
+      });
     } catch (error) {
       if (error instanceof Error) {
         alert(error.message);
