@@ -157,6 +157,7 @@ def generate_tasks(assignment_id: int):
                     .update(
                         {
                             "predicted_minutes": total_minutes,
+                            "status": "planned",
                         }
                     ) \
                     .eq("id", assignment_id) \
@@ -309,9 +310,24 @@ def start_study_session(session_id: int):
             detail="Session was not found or has already been started.",
         )
 
+    updated_session = response.data[0]
+
+    (
+        supabase
+        .table("assignments")
+        .update(
+            {
+                "status": "in_progress",
+            }
+        )
+        .eq("id", updated_session["assignment_id"])
+        .neq("status", "completed")
+        .execute()
+    )
+
     return {
         "message": "Study session started.",
-        "study_session": response.data[0],
+        "study_session": updated_session,
     }
 
 @app.patch("/study-sessions/{session_id}/complete")

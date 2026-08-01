@@ -7,6 +7,7 @@ import {
   getAssignments, 
   startStudySession,
   completeStudySession,
+  completeAssignment,
 } from "@/lib/api";
 
 import { useEffect, useState } from "react";
@@ -43,6 +44,8 @@ type StudySession = {
   planned_minutes: number;
   scheduled_start: string;
   scheduled_end: string;
+  actual_start: string | null;
+  actual_end: string | null;
   status: string;
 };
 
@@ -164,6 +167,39 @@ export default function Home() {
     }
   }
 
+  async function handleCompleteAssignment() {
+    if (!selectedPlan) return;
+
+    const actualMinutes = Math.max(1, totalActualMinutes);
+
+    try {
+      const response = await completeAssignment(
+        selectedPlan.assignment.id,
+        actualMinutes
+      );
+
+      const completedAssignment = response.assignment;
+
+      setSelectedPlan({
+        ...selectedPlan,
+        assignment: completedAssignment,
+      });
+
+      setAssignments((currentAssignments) =>
+        currentAssignments.map((assignment) =>
+          assignment.id === completedAssignment.id
+            ? completedAssignment
+            : assignment
+        )
+      );
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+        console.error(error);
+      }
+    }
+  }
+
   useEffect(() => {
     async function loadAssignments() {
       const data = await getAssignments();
@@ -204,6 +240,18 @@ export default function Home() {
     totalSessions === 0
       ? 0
       : Math.round((completedSessions / totalSessions) * 100);
+
+  const totalActualMinutes =
+    selectedPlan?.study_sessions.reduce((total, session) => {
+      if (!session.actual_start || !session.actual_end) {
+        return total;
+      }
+
+      const start = new Date(session.actual_start).getTime();
+      const end = new Date(session.actual_end).getTime();
+
+      return total + Math.max(0, Math.round((end - start) / 60000));
+    }, 0) ?? 0;
 
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-10">
@@ -445,6 +493,23 @@ export default function Home() {
                     <p className="mt-3 text-sm text-zinc-600">
                       {progressPercentage}% Complete
                     </p>
+
+                    {progressPercentage === 100 &&
+                      selectedPlan.assignment.status !== "completed" && (
+                        <div className="mt-6 border-t border-zinc-200 pt-4">
+                          <p className="text-sm text-zinc-600">
+                            Ready to complete this assignment.
+                          </p>
+
+                          <button
+                            onClick={handleCompleteAssignment}
+                            className="mt-3 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                          >
+                            Complete Assignment
+                          </button>
+                        </div>
+                      )}
+
                   </div>
 
                   <div>

@@ -105,3 +105,31 @@ export async function completeStudySession(sessionId: number) {
 
   return response.json();
 }
+
+export async function completeAssignment(
+  assignmentId: number,
+  actualMinutes: number
+) {
+  const response = await fetch(
+    `${API_BASE_URL}/assignments/${assignmentId}/complete`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        actual_minutes: actualMinutes,
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+
+    throw new Error(
+      errorData.detail || "Failed to complete assignment."
+    );
+  }
+
+  return response.json();
+}
