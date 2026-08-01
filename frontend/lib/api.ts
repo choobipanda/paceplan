@@ -152,3 +152,36 @@ export async function deleteAssignment(assignmentId: number) {
 
   return response.json();
 }
+
+export async function updateAssignment(
+  assignmentId: number,
+  assignment: {
+    title: string;
+    prompt: string;
+    assignment_type: string;
+    difficulty: number;
+    due_date: string;
+    preferred_session_length: number;
+  }
+) {
+  const response = await fetch(
+    `${API_BASE_URL}/assignments/${assignmentId}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(assignment),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+
+    throw new Error(
+      errorData.detail || "Failed to update assignment."
+    );
+  }
+
+  return response.json();
+}

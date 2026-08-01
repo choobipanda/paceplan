@@ -463,3 +463,35 @@ def delete_assignment(assignment_id: int):
         "message": "Assignment deleted.",
         "assignment_id": assignment_id,
     } 
+
+@app.patch("/assignments/{assignment_id}")
+def update_assignment(
+    assignment_id: int,
+    assignment: AssignmentCreate,
+):
+    response = (
+        supabase
+        .table("assignments")
+        .update(
+            {
+                "title": assignment.title,
+                "prompt": assignment.prompt,
+                "assignment_type": assignment.assignment_type,
+                "difficulty": assignment.difficulty,
+                "due_date": assignment.due_date.isoformat(),
+                "preferred_session_length": assignment.preferred_session_length,
+            }
+        )
+        .eq("id", assignment_id)
+        .execute()
+    )
+
+    if not response.data:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found.",
+        )
+
+    return {
+        "assignment": response.data[0]
+    }

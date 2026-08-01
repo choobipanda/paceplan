@@ -9,6 +9,7 @@ import {
   completeStudySession,
   completeAssignment,
   deleteAssignment,
+  updateAssignment,
 } from "@/lib/api";
 
 import { useEffect, useState } from "react";
@@ -67,22 +68,47 @@ export default function Home() {
   const [generatingId, setGeneratingId] = useState<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<AssignmentPlan | null>(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
+  const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    
-    const newAssignment = await createAssignment({
-      title,
-      prompt,
-      assignment_type: assignmentType,
-      difficulty,
-      due_date: dueDate,
-      preferred_session_length: sessionLength,
-    });
+
+    if (editingAssignment) {
+      const response = await updateAssignment(editingAssignment.id, {
+        title,
+        prompt,
+        assignment_type: assignmentType,
+        difficulty,
+        due_date: dueDate,
+        preferred_session_length: sessionLength,
+      });
+
+      const updatedAssignment = response.assignment;
+
+      if (
+        selectedPlan &&
+        selectedPlan.assignment.id === updatedAssignment.id
+      ) {
+        setSelectedPlan({
+          ...selectedPlan,
+          assignment: updatedAssignment,
+        });
+      }
+    } else {
+      await createAssignment({
+        title,
+        prompt,
+        assignment_type: assignmentType,
+        difficulty,
+        due_date: dueDate,
+        preferred_session_length: sessionLength,
+      });
+    }
 
     const updatedAssignments = await getAssignments();
     setAssignments(updatedAssignments);
-    
+
+    setEditingAssignment(null);
 
     setTitle("");
     setPrompt("");
@@ -247,6 +273,28 @@ export default function Home() {
     }
   }
 
+  function handleEditAssignment(assignment: Assignment) {
+    setEditingAssignment(assignment);
+
+    setTitle(assignment.title);
+    setPrompt(assignment.prompt);
+    setAssignmentType(assignment.assignment_type);
+    setDifficulty(assignment.difficulty);
+
+    setDueDate(
+      new Date(assignment.due_date)
+        .toISOString()
+        .slice(0, 16)
+    );
+
+    setSessionLength(assignment.preferred_session_length);
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
   useEffect(() => {
     async function loadAssignments() {
       const data = await getAssignments();
@@ -323,7 +371,7 @@ export default function Home() {
           className="mb-8 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm"
         >
           <h2 className="mb-4 text-xl font-semibold text-zinc-900">
-            New Assignment
+            {editingAssignment ? "Edit Assignment" : "New Assignment"}
           </h2>
 
           <div className="space-y-4">
@@ -385,7 +433,7 @@ export default function Home() {
               type="submit"
               className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             >
-              Create Assignment
+              {editingAssignment ? "Update Assignment" : "Create Assignment"}
             </button>
           </div>
         </form>
@@ -463,6 +511,13 @@ export default function Home() {
                             : "Generate Plan"}
                         </button>
                       )}
+
+                      <button
+                        onClick={() => handleEditAssignment(assignment)}
+                        className="mt-2 w-full rounded-lg border border-blue-300 px-4 py-2 text-blue-600 transition-colors hover:bg-blue-50"
+                      >
+                        Edit Assignment
+                      </button>
 
                       <button
                         onClick={() => handleDeleteAssignment(assignment.id)}
