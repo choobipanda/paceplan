@@ -442,3 +442,24 @@ def get_assignment_plan(assignment_id: int):
         "tasks": tasks.data,
         "study_sessions": study_sessions.data,
     }
+
+@app.delete("/assignments/{assignment_id}")
+def delete_assignment(assignment_id: int):
+    response = (
+        supabase
+        .table("assignments")
+        .delete()
+        .eq("id", assignment_id)
+        .execute()
+    )
+
+    if not response.data:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found.",
+        )
+
+    return {
+        "message": "Assignment deleted.",
+        "assignment_id": assignment_id,
+    } 

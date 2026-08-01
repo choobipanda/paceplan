@@ -8,6 +8,7 @@ import {
   startStudySession,
   completeStudySession,
   completeAssignment,
+  deleteAssignment,
 } from "@/lib/api";
 
 import { useEffect, useState } from "react";
@@ -192,6 +193,52 @@ export default function Home() {
             : assignment
         )
       );
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+        console.error(error);
+      }
+    }
+  }
+
+  async function handleDeleteAssignment(assignmentId: number) {
+    if (!confirm("Delete this assignment?")) {
+      return;
+    }
+
+    try {
+      await deleteAssignment(assignmentId);
+
+      const updatedAssignments = await getAssignments();
+      setAssignments(updatedAssignments);
+
+      if (updatedAssignments.length === 0) {
+        setSelectedPlan(null);
+        setSelectedAssignmentId(null);
+        return;
+      }
+
+      const nextAssignment = updatedAssignments
+        .filter(
+          (assignment:Assignment) =>
+            assignment.status !== "completed" &&
+            assignment.predicted_minutes !== null
+        )
+        .sort(
+          (a:Assignment, b:Assignment) =>
+            new Date(a.due_date).getTime() -
+            new Date(b.due_date).getTime()
+        )[0];
+
+      if (nextAssignment) {
+        const plan = await getAssignmentPlan(nextAssignment.id);
+
+        setSelectedPlan(plan);
+        setSelectedAssignmentId(plan.assignment.id);
+      } else {
+        setSelectedPlan(null);
+        setSelectedAssignmentId(null);
+      }
     } catch (error) {
       if (error instanceof Error) {
         alert(error.message);
@@ -416,6 +463,13 @@ export default function Home() {
                             : "Generate Plan"}
                         </button>
                       )}
+
+                      <button
+                        onClick={() => handleDeleteAssignment(assignment.id)}
+                        className="mt-2 w-full rounded-lg border border-red-300 px-4 py-2 text-red-600 transition-colors hover:bg-red-50"
+                      >
+                        Delete Assignment
+                      </button>
                     </li>
                   ))}
                 </ul>

@@ -133,3 +133,22 @@ export async function completeAssignment(
 
   return response.json();
 }
+
+export async function deleteAssignment(assignmentId: number) {
+  const response = await fetch(
+    `${API_BASE_URL}/assignments/${assignmentId}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+
+    throw new Error(
+      errorData.detail || "Failed to delete assignment."
+    );
+  }
+
+  return response.json();
+}
