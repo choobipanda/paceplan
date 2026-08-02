@@ -69,6 +69,7 @@ export default function Home() {
   const [selectedPlan, setSelectedPlan] = useState<AssignmentPlan | null>(null);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState<number | null>(null);
   const [editingAssignment, setEditingAssignment] = useState<Assignment | null>(null);
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -348,6 +349,14 @@ export default function Home() {
       return total + Math.max(0, Math.round((end - start) / 60000));
     }, 0) ?? 0;
 
+    const filteredAssignments = 
+      assignmentFilter === "all"
+        ? assignments
+        : assignments.filter(
+          (assignment: Assignment) =>
+              assignment.status === assignmentFilter
+        );
+
   return (
     <main className="min-h-screen bg-zinc-50 px-6 py-10">
       <div className="mx-auto max-w-5xl">
@@ -444,13 +453,38 @@ export default function Home() {
                 Assignments
               </h2>
 
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[
+                  "all",
+                  "planned",
+                  "in_progress",
+                  "completed",
+                ].map((filter) => (
+                  <button
+                    key={filter}
+                    onClick={() => setAssignmentFilter(filter)}
+                    className={`rounded-full px-3 py-1 text-sm transition-colors ${
+                      assignmentFilter === filter
+                        ? "bg-blue-600 text-white"
+                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                    }`}
+                  >
+                    {filter === "all"
+                      ? "All"
+                      : filter === "in_progress"
+                      ? "In Progress"
+                      : filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </button>
+                ))}
+              </div>
+
               {assignments.length === 0 ? (
                 <p className="mt-2 text-zinc-600">
                   No assignments found.
                 </p>
               ) : (
                 <ul className="mt-4 space-y-4">
-                  {assignments.map((assignment) => (
+                  {filteredAssignments.map((assignment) => (
                     <li
                       key={assignment.id}
                       className={`rounded-lg border p-4 transition-colors ${
