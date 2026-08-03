@@ -185,3 +185,24 @@ export async function updateAssignment(
 
   return response.json();
 }
+
+export async function archiveAssignment(
+  assignmentId: number
+) {
+  const response = await fetch(
+    `${API_BASE_URL}/assignments/${assignmentId}/archive`,
+    {
+      method: "PATCH",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+
+    throw new Error(
+      errorData.detail || "Failed to archive assignment."
+    );
+  }
+
+  return response.json();
+}

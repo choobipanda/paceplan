@@ -495,3 +495,27 @@ def update_assignment(
     return {
         "assignment": response.data[0]
     }
+
+@app.patch("/assignments/{assignment_id}/archive")
+def archive_assignment(assignment_id: int):
+    response = (
+        supabase
+        .table("assignments")
+        .update(
+            {
+                "status": "archived",
+            }
+        )
+        .eq("id", assignment_id)
+        .execute()
+    )
+
+    if not response.data:
+        raise HTTPException(
+            status_code=404,
+            detail="Assignment not found.",
+        )
+
+    return {
+        "assignment": response.data[0],
+    }

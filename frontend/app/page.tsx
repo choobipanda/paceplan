@@ -10,7 +10,9 @@ import {
   completeAssignment,
   deleteAssignment,
   updateAssignment,
+  archiveAssignment,
 } from "@/lib/api";
+import next from "next";
 
 import { useEffect, useState } from "react";
 
@@ -274,6 +276,45 @@ export default function Home() {
     }
   }
 
+  async function handleArchiveAssignment(assignmentId: number) {
+    try {
+      await archiveAssignment(assignmentId);
+
+      const updatedAssignments = await getAssignments();
+      setAssignments(updatedAssignments);
+
+      if (selectedAssignmentId === assignmentId) {
+        const nextAssignment = updatedAssignments
+          .filter(
+            (assignment: Assignment) =>
+              assignment.status !== "archived" &&
+              assignment.status !== "completed" &&
+              assignment.predicted_minutes !== null
+          )
+          .sort(
+            (a: Assignment, b: Assignment) =>
+              new Date(a.due_date).getTime() -
+              new Date(b.due_date).getTime()
+          )[0];
+
+      if (nextAssignment) {
+        const plan = await getAssignmentPlan(nextAssignment.id);
+
+        setSelectedPlan(plan);
+        setSelectedAssignmentId(plan.assignment.id);
+      } else {
+        setSelectedPlan(null);
+        setSelectedAssignmentId(null);
+        }
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(error.message);
+        console.error(error);
+      }
+    }
+  }
+
   function handleEditAssignment(assignment: Assignment) {
     setEditingAssignment(assignment);
 
@@ -459,6 +500,7 @@ export default function Home() {
                   "planned",
                   "in_progress",
                   "completed",
+                  "archived",
                 ].map((filter) => (
                   <button
                     key={filter}
@@ -551,6 +593,13 @@ export default function Home() {
                         className="mt-2 w-full rounded-lg border border-blue-300 px-4 py-2 text-blue-600 transition-colors hover:bg-blue-50"
                       >
                         Edit Assignment
+                      </button>
+
+                      <button
+                        onClick={() => handleArchiveAssignment(assignment.id)}
+                        className="mt-2 w-full rounded-lg border border-zinc-300 px-4 py-2 text-zinc-700 transition-colors hover:bg-zinc-100"
+                      >
+                        Archive Assignment
                       </button>
 
                       <button
