@@ -12,7 +12,6 @@ import {
   updateAssignment,
   archiveAssignment,
 } from "@/lib/api";
-import next from "next";
 
 import { useEffect, useState } from "react";
 
@@ -342,10 +341,10 @@ export default function Home() {
       const data = await getAssignments();
       setAssignments(data);
 
-      const closestAssignment = data
+      const inProgressAssignment = data
         .filter(
           (assignment: Assignment) =>
-            assignment.status !== "completed" &&
+            assignment.status === "in_progress" &&
             assignment.predicted_minutes !== null
         )
         .sort(
@@ -354,11 +353,29 @@ export default function Home() {
             new Date(b.due_date).getTime()
         )[0];
 
+      const earliestPlannedAssignment = data
+        .filter(
+          (assignment: Assignment) =>
+            assignment.status === "planned" &&
+            assignment.predicted_minutes !== null
+        )
+        .sort(
+          (a: Assignment, b: Assignment) =>
+            new Date(a.due_date).getTime() -
+            new Date(b.due_date).getTime()
+        )[0];
+
+      const closestAssignment =
+        inProgressAssignment ?? earliestPlannedAssignment;
+
       if (closestAssignment) {
         const plan = await getAssignmentPlan(closestAssignment.id);
 
         setSelectedPlan(plan);
         setSelectedAssignmentId(plan.assignment.id);
+      } else {
+        setSelectedPlan(null);
+        setSelectedAssignmentId(null);
       }
     }
 
@@ -487,8 +504,14 @@ export default function Home() {
             </button>
           </div>
         </form>
-        <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
-          <div className="order-2">
+        <div
+          className={`grid min-w-0 gap-8 ${
+            selectedPlan
+              ? "lg:grid-cols-[minmax(0,1fr)_340px]"
+              : "lg:grid-cols-1"
+          }`}
+        >
+          <div className={`min-w-0 ${selectedPlan ? "order-2" : "order-1"}`}>
             <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
               <h2 className="text-xl font-semibold text-zinc-900">
                 Assignments
@@ -614,8 +637,9 @@ export default function Home() {
               )}
             </section>
           </div>
-          <div className="order-1">
-            {selectedPlan && (
+            
+          {selectedPlan && (
+            <div className="order-1 min-w-0">
               <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-zinc-900">
                   Study Plan
@@ -649,7 +673,7 @@ export default function Home() {
                       Tasks
                     </h3>
 
-                    <ul className="mt-2 grid grid-flow-col grid-rows-2 auto-cols-[220px] gap-x-6 gap-y-2 overflow-x-auto pb-3">
+                    <ul className="mt-2 grid max-w-full grid-flow-col grid-rows-2 auto-cols-[220px] gap-x-6 gap-y-2 overflow-x-auto pb-3">
                       {selectedPlan.tasks.map((task) => (
                         <li
                           key={task.id}
@@ -790,8 +814,9 @@ export default function Home() {
                 </div>
 
               </section>
-            )}
-          </div>
+            </div>
+          )}
+
         </div>
       </div>
     </main>
